@@ -1,7 +1,7 @@
 import os
 import requests
+from math import radians, sin, cos, sqrt, atan2, degrees
 from dotenv import load_dotenv
-from math import radians, sin, cos, sqrt, atan2
 
 # Load the .env file
 load_dotenv()
@@ -9,11 +9,11 @@ load_dotenv()
 # Get the API key from environment variables
 api_key = os.getenv("GOOGLE_API_KEY")
 
-# Debugging: Print the API key to verify it's loaded
+# Check if the API key is loaded
 if not api_key:
     print("Error: API key is not set or is empty!")
 else:
-    print(f"API Key: {api_key}")
+    print(f"API Key successfully loaded: {api_key[:5]}...")  # Print first 5 characters for validation
 
 # Step 1: Geocode address to get latitude and longitude
 def geocode_address(address, api_key):
@@ -21,7 +21,6 @@ def geocode_address(address, api_key):
     response = requests.get(geocode_url)
     geocode_data = response.json()
 
-    # Check if the status is OK, otherwise print the error
     if geocode_data['status'] == 'OK':
         lat = geocode_data['results'][0]['geometry']['location']['lat']
         lng = geocode_data['results'][0]['geometry']['location']['lng']
@@ -36,7 +35,6 @@ def find_nearest_road(lat, lng, api_key):
     response = requests.get(roads_url)
     roads_data = response.json()
 
-    # Check if snappedPoints are available in the response
     if 'snappedPoints' in roads_data:
         nearest_road = roads_data['snappedPoints'][0]
         return nearest_road['location']['latitude'], nearest_road['location']['longitude']
@@ -44,7 +42,7 @@ def find_nearest_road(lat, lng, api_key):
         print("Error finding nearest road:", roads_data)
         return None, None
 
-# Step 3: Calculate distance using Haversine formula (if needed)
+# Step 3: Calculate distance using Haversine formula
 def calculate_distance(lat1, lon1, lat2, lon2):
     R = 6371.0  # Radius of Earth in km
     lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
@@ -57,19 +55,45 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     distance = R * c  # Distance in km
     return distance
 
-# Example usage
-address = "48 5th St NW, Atlanta, GA 30332"
-
-# Geocode the address
-lat, lng = geocode_address(address, api_key)
-if lat and lng:
-    print(f"Latitude: {lat}, Longitude: {lng}")
+# Step 4: Calculate bearing between two points
+def calculate_bearing(lat1, lon1, lat2, lon2):
+    lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
     
-    # Find the nearest road
-    nearest_lat, nearest_lng = find_nearest_road(lat, lng, api_key)
-    if nearest_lat and nearest_lng:
-        print(f"Nearest Road Latitude: {nearest_lat}, Nearest Road Longitude: {nearest_lng}")
+    delta_lon = lon2 - lon1
+    x = sin(delta_lon) * cos(lat2)
+    y = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(delta_lon)
+    
+    bearing = atan2(x, y)
+    
+    # Convert bearing from radians to degrees
+    bearing = degrees(bearing)
+    
+    # Normalize bearing to be between 0 and 360
+    bearing = (bearing + 360) % 360
+    return bearing
+
+# Main function to interact with the user
+def main():
+    address = input("Enter the address: ")
+
+    # Geocode the address
+    lat, lng = geocode_address(address, api_key)
+    if lat and lng:
+        print(f"Latitude: {lat}, Longitude: {lng}")
         
-        # Calculate the distance between the address and the nearest road
-        distance = calculate_distance(lat, lng, nearest_lat, nearest_lng)
-        print(f"Distance from {address} to nearest road: {distance} km")
+        # Find the nearest road
+        nearest_lat, nearest_lng = find_nearest_road(lat, lng, api_key)
+        if nearest_lat and nearest_lng:
+            print(f"Nearest Road Latitude: {nearest_lat}, Nearest Road Longitude: {nearest_lng}")
+            
+            # Calculate the distance between the address and the nearest road
+            distance = calculate_distance(lat, lng, nearest_lat, nearest_lng)
+            print(f"Distance from {address} to nearest road: {distance} km")
+            
+            # Calculate the bearing (angle) between the address and the nearest road
+            bearing = calculate_bearing(lat, lng, nearest_lat, nearest_lng)
+            print(f"Angle from {address} to nearest road: {bearing}°")
+
+# Run the main function
+if __name__ == "__main__":
+    main()
