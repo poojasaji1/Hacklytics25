@@ -2,6 +2,8 @@ import os
 import requests
 from math import radians, sin, cos, sqrt, atan2, degrees
 from dotenv import load_dotenv
+from PIL import Image
+from io import BytesIO
 
 # Load the .env file
 load_dotenv()
@@ -72,6 +74,22 @@ def calculate_bearing(lat1, lon1, lat2, lon2):
     bearing = (bearing + 360) % 360
     return bearing
 
+# Step 5: Get Google Street View Image
+def get_street_view_image(lat, lng, api_key):
+    # Google Street View Static API URL
+    street_view_url = f"https://maps.googleapis.com/maps/api/streetview?size=600x300&location={lat},{lng}&key={api_key}"
+    
+    # Send the request and get the image
+    response = requests.get(street_view_url)
+    
+    if response.status_code == 200:
+        # Open and save the image
+        image = Image.open(BytesIO(response.content))
+        image.save("street_view_image.jpg")
+        print("Street view image saved as street_view_image.jpg")
+    else:
+        print("Error retrieving street view image:", response.status_code)
+
 # Main function to interact with the user
 def main():
     address = input("Enter the address: ")
@@ -93,6 +111,9 @@ def main():
             # Calculate the bearing (angle) between the address and the nearest road
             bearing = calculate_bearing(lat, lng, nearest_lat, nearest_lng)
             print(f"Angle from {address} to nearest road: {bearing}°")
+            
+            # Get the Street View Image for the location
+            get_street_view_image(lat, lng, api_key)
 
 # Run the main function
 if __name__ == "__main__":
