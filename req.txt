@@ -1,0 +1,8 @@
+google-api-core==2.24.1
+google-auth==2.38.0
+requests==2.32.3
+google-cloud-vision==3.10.0
+google-cloud-core==2.4.2
+pillow==10.4.0
+python-dotenv==1.0.1
+grpcio==1.70.0
